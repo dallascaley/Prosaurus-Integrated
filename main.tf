@@ -12,12 +12,13 @@ provider "kubernetes" {
   config_context = "kind-kind"
 }
 
-# Create a Kubernetes Deployment for a Docker container (nginx-based web server)
-resource "kubernetes_deployment" "my_hello_world" {
+# Create a Kubernetes Deployment for a Docker container
+resource "kubernetes_deployment" "breakroom" {
   metadata {
-    name = "my-hello-world-app"
+    name = "breakroom-app"
+    namespace = kubernetes_namespace.prosaurus-tf.metadata[0].name
     labels = {
-      app = "hello-world"
+      app = "breakroom"
     }
   }
 
@@ -26,21 +27,22 @@ resource "kubernetes_deployment" "my_hello_world" {
 
     selector {
       match_labels = {
-        app = "hello-world"
+        app = "breakroom"
       }
     }
 
     template {
       metadata {
         labels = {
-          app = "hello-world"
+          app = "breakroom"
         }
       }
 
       spec {
         container {
-          name  = "hello-world-container"
-          image = "nginx:latest"  # This is a simple nginx server image
+          name  = "breakroom-container"
+          image = "dallascaley/breakroom:latest"
+          image_pull_policy = "Always"  # Ensures Kubernetes pulls the image every time
 
           port {
             container_port = 80
@@ -49,17 +51,23 @@ resource "kubernetes_deployment" "my_hello_world" {
       }
     }
   }
+
+  timeouts {
+    create = "2m"  # Timeout for creation after 2 minutes
+    update = "2m"  # Timeout for updates after 2 minutes
+  }
 }
 
 # Optionally, create a service to expose your deployment
-resource "kubernetes_service" "hello_world_service" {
+resource "kubernetes_service" "breakroom_service" {
   metadata {
-    name = "hello-world-service"
+    name = "breakroom-service"
+    namespace = kubernetes_namespace.prosaurus-tf.metadata[0].name
   }
 
   spec {
     selector = {
-      app = "hello-world"
+      app = "breakroom"
     }
 
     port {

@@ -1,0 +1,82 @@
+How to do vue forms:
+
+https://www.youtube.com/watch?v=ixOcve5PX-Q&t=121s
+
+Subject: how to make a form
+
+note 1: British slang "pants" = shit
+note 2: best part of video is first 15 minutes then last 10
+
+https://www.youtube.com/watch?v=0DCXyFFm3OA
+
+Subject: how to post to API
+
+KOA
+
+Ok...
+
+This shit: https://www.tutorialspoint.com/koajs/index.htm
+
+doesn't seem to work at all... next...
+
+fuck it, let's try express
+
+https://www.youtube.com/watch?v=SccSCuHhOw0
+
+Examples from this tutorail (for reference later)
+
+// db.js
+const { Pool } = require('pg');
+
+// Create a new pool of connections
+const pool = new Pool({
+  user: 'splort',         // The PostgreSQL user
+  host: 'localhost',         // PostgreSQL server address (use your VM's IP if needed)
+  database: 'breakroom',     // Name of your database
+  password: 'glorp', // Password for the user
+  port: 5432,                // Default PostgreSQL port
+});
+
+// Export the pool for use in other files
+module.exports = pool;
+
+// Default route (which includes a bunch of shit from other demos)
+app.get('/', async (req, res) => {
+  console.log('whatever')
+  //res.send('Hi') // just sends Hi
+  //res.sendStatus(500) // just sends a 500 error
+  //res.status(500).send('Hi') // does both things
+  //res.status(500).json({message: "you done fucked up!"})  //this
+  //res.download('server.js')
+
+  try {
+    // Query to get all users (assuming you have a "user" table)
+    const result = await pool.query('SELECT * FROM "user"');
+    console.log('duh');
+    res.json(result.rows); // Send the results back to the client
+  } catch (err) {
+    console.error('Error executing query', err.stack);
+    res.status(500).send('Internal Server Error');
+  }
+  //res.render("index", { text2: 'World duh...'});
+})
+
+<- March 15th Status ->
+
+Intalled Docker, got a basic docker image created
+
+Installed Terraform, went through 8 tutorials on Terraform
+
+Installed Kubernetes command line tool kubectl.exe
+Installed Kind.exe also
+
+Made a kubernetes cluster with kind. not really sure how to use it yet.  still learning.
+
+Future steps
+
+Merge this code into working docker instance
+
+possible do this again but with one of the terraform creatd docker instances
+
+and again with whatever the fuck kubernetes has created. 
+

@@ -1,0 +1,60 @@
+
+terraform init
+
+terraform apply
+
+terraform destroy
+
+terraform refresh
+
+terraform plan
+
+$env:TF_LOG = "DEBUG"
+Remove-Item -Path Env:TF_LOG
+
+kubectl run -i --tty --rm debug --image=busybox --namespace=prosaurus-k8s --restart=Never -- /bin/sh
+
+kubectl get svc breakroom-service -n prosaurus-k8s
+
+  NAME                TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+  breakroom-service   NodePort   10.96.112.110   <none>        80:30625/TCP   23h
+
+kubectl get pods -n prosaurus-k8s
+
+  Example output:
+
+  NAME                             READY   STATUS    RESTARTS        AGE
+  breakroom-app-86cf448fb7-ph7l6   1/1     Running   1 (3h58m ago)   23h
+  breakroom-app-86cf448fb7-tmssv   1/1     Running   1 (3h58m ago)   23h
+
+kubectl logs breakroom-app-86cf448fb7-ph7l6 -n prosaurus-k8s
+  
+  Example output
+
+  App listening at http://localhost:80
+
+kubectl port-forward svc/breakroom-service 30625:80 -n prosaurus-k8s
+
+  Example output
+
+  Forwarding from 127.0.0.1:30625 -> 80
+  Forwarding from [::1]:30625 -> 80
+  Handling connection for 30625
+  Handling connection for 30625
+  Handling connection for 30625
+
+  For some reason this made the app available at localhost:30625 (not port 80 which is what i was expecting)
+
+kubectl describe pod breakroom-app-86cf448fb7-bqk4k -n prosaurus-k8s
+
+kubectl describe deployment breakroom-app -n prosaurus-k8s
+
+kubectl get deployments -n prosaurus-k8s
+
+kubectl get nodes
+
+kind get clusters
+
+kubectl config get-contexts
+
+kubectl delete deployment breakroom-app

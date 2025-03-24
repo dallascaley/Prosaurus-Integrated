@@ -24,6 +24,8 @@ After the EC2 instance(s) are launched, you need to manually (or using automatio
 
 You could use a tool like kubeadm to set up a Kubernetes master and worker nodes.
 
+<you are here>
+
 Step 3: Set up the Kubernetes cluster.
 After installing Kubernetes on your EC2 instances, you'll use kubeadm init on the master node to initialize the cluster, then join worker nodes using kubeadm join from the worker nodes.
 
@@ -36,6 +38,7 @@ Step 5: Use the kubeconfig in Terraform.
 Now that your Kubernetes cluster is set up, you can use the kubeconfig file to configure the Terraform Kubernetes provider by either referencing it directly (as you were originally doing) or setting the KUBECONFIG environment variable.
 
 3. But What If I Don’t Want to Set Up a Full Kubernetes Cluster Manually?
+
 If you want to avoid manually setting up Kubernetes on EC2 instances and would rather automate the process, here are two popular options:
 
 Kops: An easier way to set up a Kubernetes cluster on EC2 instances. kops simplifies the creation of a highly available Kubernetes cluster.
@@ -45,6 +48,7 @@ kubeadm: If you prefer a more hands-on approach, kubeadm is a tool for setting u
 Once the Kubernetes cluster is up and running, Terraform can be used to configure Kubernetes resources (deployments, services, etc.) on the cluster.
 
 4. What You’re Missing:
+
 Your Terraform code currently assumes that a Kubernetes cluster is already present and that you have a valid kubeconfig file to authenticate against the cluster. Since you're still in the process of setting up the cluster (or don't have it set up yet), Terraform cannot interact with Kubernetes resources at this time because there is no running cluster to connect to.
 
 Suggested Approach:
@@ -59,6 +63,7 @@ Once the Kubernetes cluster is running, update your Terraform Kubernetes provide
 Deploy your applications using Kubernetes resources in Terraform (as you're currently doing with kubernetes_deployment, kubernetes_service, etc.).
 
 Conclusion:
+
 The reason your Kubernetes provider block is not working now is that the Kubernetes cluster isn't set up yet. Terraform can't interact with Kubernetes resources without a functioning cluster to connect to. The next steps are to set up Kubernetes on your EC2 instances (either manually or via automation), get your kubeconfig file, and then update your Terraform code to use that configuration to deploy your resources.
 
 If you need help with setting up the Kubernetes cluster itself, I can guide you through the process of using kubeadm or kops to do that! Let me know how you'd like to proceed.

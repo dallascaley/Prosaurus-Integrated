@@ -1,13 +1,3 @@
-# This Terraform code defines a set of Kubernetes resources to be created and managed on a Kubernetes cluster.
-#
-#  - Update 3/23/2025: it now also creates an EC2 instance.
-#     * The purpose of this EC2 instance is to replace the kind control panel in a production deployement
-#
-# Here’s a breakdown of what the code does:
-
-# The terraform block specifies the required provider for interacting with Kubernetes and aws
-# it also defines a remote backend resource
-
 terraform {
   backend "remote" {
     organization = "Cherry-Blossom-Development"
@@ -15,206 +5,68 @@ terraform {
       name = "Development-Workspace"
     }
   }
-
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 4.16"
-    }
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = "2.36.0"
     }
   }
 
   required_version = ">= 1.2.0"
 }
 
-
-# This block configures the Kubernetes provider to authenticate and interact with your Kubernetes cluster.
-
-# The config_path points to your Kubernetes configuration file (~/.kube/config), which typically contains the
-# credentials and context for accessing a Kubernetes cluster.
-
-# The config_context specifies the Kubernetes context to use from that file, here set to kind-kind. This suggests
-# you're working with a Kubernetes cluster created using Kind (Kubernetes in Docker).
-
-provider "kubernetes" {
-  config_path    = "~/.kube/config"
-  config_context = "kind-kind"
-}
-
-
-# Added 3/23/2025 - This block configures the aws provider
-
 provider "aws" {
   region  = "us-west-2"
 }
 
-
-# This creates a Kubernetes namespace named prosaurus-k8s to logically organize resources within your cluster.
-
-resource "kubernetes_namespace" "prosaurus-tf" {
-  metadata {
-    name = "prosaurus-k8s"
-  }
-}
-
-
-# Added 3/23/2025 - This block configures the EC2 instance
-
-# This adds an aws_instance resource to your configuration that provisions an EC2 instance.
-
-# user_data is used to automate the installation of Docker, Kubernetes components (kubeadm, kubelet, kubectl), 
-# and the Flannel CNI plugin for networking.
-
-# The kubeadm init command sets up the EC2 instance as a Kubernetes master node. (You can later add more worker 
-# nodes if needed.)
-
 resource "aws_instance" "app_server" {
-  ami           = "ami-08d70e59c07c61a3a"  # Example AMI, replace with one that fits your needs (Ubuntu, Amazon Linux, etc.)
+  ami           = "ami-08d70e59c07c61a3a"
   instance_type = "t2.micro"
-  
-  # Configure security group and SSH access
-  security_groups = ["default"]  # Adjust as necessary
-  key_name        = var.ssh_key_name  # Specify your SSH key name for access
 
-  tags = {
-    Name = "K8s-EC2-Instance"
-  }
-
-  # User data to install Kubernetes dependencies and set up the cluster
+  # Add user_data for Kubernetes installation
   user_data = <<-EOF
               #!/bin/bash
-              # Install Docker and Kubernetes on the EC2 instance
-              sudo apt-get update -y
-              sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-              sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-              sudo apt-get update -y
-              sudo apt-get install -y docker-ce
-              sudo systemctl enable docker
-              sudo systemctl start docker
+              # Update the system
+              sudo apt-get update -y && sudo apt-get upgrade -y
+
+              # Install dependencies
+              sudo apt-get install -y apt-transport-https curl
+
+              # Add Kubernetes APT repository
+              curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+              echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
 
               # Install kubeadm, kubelet, and kubectl
-              curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-              sudo apt-add-repository "deb http://apt.kubernetes.io/ kubernetes-xenial main"
               sudo apt-get update -y
               sudo apt-get install -y kubeadm kubelet kubectl
-              sudo systemctl enable kubelet
-              sudo systemctl start kubelet
 
-              # Initialize Kubernetes master node (if this is the first node)
+              # Mark them to hold the version
+              sudo apt-mark hold kubeadm kubelet kubectl
+
+              # Disable swap (required for kubeadm)
+              sudo swapoff -a
+              sudo sed -i '/swap/d' /etc/fstab
+
+              # Initialize Kubernetes master node (this will require further configuration depending on your setup)
               sudo kubeadm init --pod-network-cidr=10.244.0.0/16
 
-              # Set up kubeconfig for root user (to interact with the Kubernetes cluster)
+              # Set up kubeconfig for the root user
               mkdir -p $HOME/.kube
               sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
               sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-              # Install Flannel CNI plugin (for networking)
+              # Install Flannel CNI (Container Network Interface)
               kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+              # Enable kubelet to start on boot
+              sudo systemctl enable kubelet
+              sudo systemctl start kubelet
               EOF
-}
 
-
-# This resource defines a Kubernetes Deployment for the application breakroom-app.
-
-# Metadata: It assigns the deployment a name (breakroom-app) and associates it with the prosaurus-k8s
-# namespace (created above). It also adds the label app = "breakroom".
-
-# Spec:
-
-# - Specifies that there will be 2 replicas of the application (two instances of the container will be running).
-
-# - The selector ensures that only pods with the label app = "breakroom" are selected by the deployment.
-
-# - Pod Template: Defines the container image (dallascaley/breakroom:latest) that will be used in the pods. It also
-# - specifies that the image should be pulled every time (Always), and the container will expose port 80.
-
-# Timeouts: Specifies timeouts for resource creation and updates (2 minutes for both).
-
-resource "kubernetes_deployment" "breakroom" {
-  metadata {
-    name = "breakroom-app"
-    namespace = kubernetes_namespace.prosaurus-tf.metadata[0].name
-    labels = {
-      app = "breakroom"
-    }
-  }
-
-  spec {
-    replicas = 2  # Number of container replicas to run
-
-    selector {
-      match_labels = {
-        app = "breakroom"
-      }
-    }
-
-    template {
-      metadata {
-        labels = {
-          app = "breakroom"
-        }
-      }
-
-      spec {
-        container {
-          name  = "breakroom-container"
-          image = "dallascaley/breakroom:latest"
-          image_pull_policy = "Always"  # Ensures Kubernetes pulls the image every time
-
-          port {
-            container_port = 80
-          }
-        }
-      }
-    }
-  }
-
-  timeouts {
-    create = "2m"  # Timeout for creation after 2 minutes
-    update = "2m"  # Timeout for updates after 2 minutes
+  tags = {
+    Name = var.instance_name
   }
 }
-
-
-# This creates a Kubernetes Service to expose the breakroom app.
-
-# Metadata: The service is named breakroom-service and is created in the prosaurus-k8s namespace.
-
-# Spec:
-
-# - The service will select pods with the label app = "breakroom" (matching the deployment).
-
-# - It will expose port 80 and forward traffic to the containers on port 80.
-
-# - Type: Set to NodePort, which is used to expose the service on a port across all nodes in the cluster.
-# - This is especially useful in local clusters like Kind.
-
-resource "kubernetes_service" "breakroom_service" {
-  metadata {
-    name = "breakroom-service"
-    namespace = kubernetes_namespace.prosaurus-tf.metadata[0].name
-  }
-
-  spec {
-    selector = {
-      app = "breakroom"
-    }
-
-    port {
-      port        = 80
-      target_port = 80
-    }
-
-    type = "NodePort"  # Use NodePort for local clusters like Kind
-  }
-}
-
-
-# Added 3/23/2025 - This block is being added so that terraform plan actually workspaces
 
 variable "ssh_key_name" {
   description = "The name of the SSH key pair to use for EC2 access"

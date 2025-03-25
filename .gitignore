@@ -21,3 +21,6 @@ override.tf.json
 
 # Kubernetes stuff
 .kube/config
+
+# stuff
+.ssh*

@@ -24,7 +24,7 @@ provider "aws" {
 resource "aws_instance" "master" {
   ami           = "ami-08d70e59c07c61a3a"
   instance_type = "t2.micro"
-  key_name      = var.ssh_key_name
+  key_name      = "Kubernetes Key"
 
   user_data = <<-EOF
               #!/bin/bash
@@ -77,7 +77,7 @@ resource "aws_instance" "master" {
 resource "aws_instance" "worker" {
   ami           = "ami-08d70e59c07c61a3a"
   instance_type = "t2.micro"
-  key_name      = var.ssh_key_name
+  key_name      = "Kubernetes Key"
 
   user_data = <<-EOF
               #!/bin/bash
@@ -157,12 +157,3 @@ output "private_key_path" {
   value = var.private_key_path
 }
 
-variable "ssh_key_name" {
-  description = "The name of the SSH key pair to use for EC2 access"
-  type        = string
-}
-
-variable "private_key_path" {
-  description = "The name of the SSH key path"
-  type        = string
-}

@@ -126,7 +126,7 @@ resource "null_resource" "join_worker" {
       host        = aws_instance.worker.public_ip
       type        = "ssh"
       user        = "ec2-user"
-      private_key = var.private_key_path
+      private_key = var.KUBERNETES_PRIVATE_KEY
     }
   }
 
@@ -138,7 +138,7 @@ resource "null_resource" "join_worker" {
       host        = aws_instance.worker.public_ip
       type        = "ssh"
       user        = "ec2-user"
-      private_key = var.private_key_path
+      private_key = var.KUBERNETES_PRIVATE_KEY
     }
   }
 }

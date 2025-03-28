@@ -1,12 +1,26 @@
 my terraform config is failing in the apply step because it can't use the ssh key provided to actually connect to my AWS instance.  Tell me every possible way that this could be broken
 
 ChatGPT said:
+
 When Terraform is failing at the apply step because it can't use the SSH key to connect to your AWS instance, there are a number of factors that could be causing the issue. Let's go through possible causes one by one:
 
 1. Incorrect SSH Key Pair Name
-Problem: The SSH key pair name you provided in the Terraform configuration might not match the key pair name in AWS.
 
-Fix: Ensure that the key pair name in your Terraform configuration matches the name of the SSH key pair you have in AWS. You can check the key pair name in the AWS Console under EC2 > Key Pairs.
+  Problem: The SSH key pair name you provided in the Terraform configuration might not match the key pair name in AWS.
+
+  Fix: Ensure that the key pair name in your Terraform configuration matches the name of the SSH key pair you have in AWS. You can check the key pair name in the AWS Console under EC2 > Key Pairs.
+
+  Note, this is hard to do because the EC2 instance is not up all the time, it only goes up when i do terraform apply which blows up...  Let's check this right now however and see what happens.
+
+  Note:
+    
+  1) Used this method, to ensure pem file has correct permission: Set-ItemProperty -Path "your-key.pem" -Name IsReadOnly -Value $true
+
+  2) Not sure if above did anything because i think the problem is that we are using terraform remotely and it is looking for a key within the terraform hcl environment not locally.
+
+  3) Added key to terraform environment and changed reference in main.tf to point to it.
+
+  4) Result is, it looks like it connects but then gets locked up somehow.  I do think this is progress.
 
 2. SSH Key Pair Not Uploaded to AWS
 Problem: If the SSH key pair does not exist in AWS, Terraform won’t be able to use it to connect to the instance.
